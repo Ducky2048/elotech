@@ -19,6 +19,12 @@
 
 */
 
+#include <EEPROM.h>
+#include <Arduino.h>  // for type definitions
+
+#include "MeOrion.h"
+
+
 // These constants won't change.  They're used to give names
 // to the pins used:
 const int analogInPin = A0;  // Analog input pin that the potentiometer is attached to
@@ -31,6 +37,9 @@ const int buttonPin = 4; // pin where button data is
 int buttonState = 0;
 bool lastState = false;
 bool timeIsRunning = false;
+bool isPrimed = false;
+
+int bestTime = 10000;
 
 uint8_t    TimeDisp0[] = { 0x10, 0x00, 0x00, 0x00 };
 uint8_t    TimeDisp1[] = { 0x10, 0x00, 0x00, 0x00 };
@@ -53,39 +62,51 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, HIGH);   // sets the LED on
   lastState = isGlassPresent();
+  displayTime(disp1, bestTime);
   Serial.write("Entering main loop\n");
 }
 
 void loop()
 {
-   bool presence = isGlassPresent();
-   if (presence)
-  {
-    Serial.write("Glass is present\n");
-    if (timeIsRunning) {
+  if (isPrimed) {
+    bool presence = isGlassPresent();
+    if (presence)
+    {
+      Serial.write("Glass is present\n");
+      if (timeIsRunning) {
+        displayTime(disp0, currTime);
+        if (currTime < bestTime) {
+          bestTime = currTime;
+          displayTime(disp1, bestTime);
+          isPrimed = false;
+        }
+        timeIsRunning = false;
+      }
+
+    }
+    else
+    {
+      if (!timeIsRunning) {
+        startTime = millis();
+      }
+      timeIsRunning = true;
+      currTime = (millis() - startTime);
       displayTime(disp0, currTime);
-      timeIsRunning = false;
+      Serial.write("Glass is no longer present\n");
+
     }
 
+    
   }
-  else
-  {
-    if (!timeIsRunning) {
-      startTime = millis();
-    }
-    timeIsRunning = true;
+  //:::::::::Prime Button::::::::::
+  buttonState = digitalRead(buttonPin);
+  if (buttonState == LOW) {
+    isPrimed = true;
+    Serial.write("button Pressed");
+    //Serial.write("button Pressed");
+    //displayTime(disp1, currTime);
+  }
 
-    currTime = (millis() - startTime);
-    displayTime(disp0, currTime);
-
-    Serial.write("Glass is no longer present\n");
-  }
-  
-   buttonState = digitalRead(buttonPin);
-  gif (buttonState == LOW) { 
-   Serial.write("button Pressed");
-   displayTime(disp1, currTime);   
-  }
   delay(50);
 
 }
@@ -159,5 +180,22 @@ void displayTime(Me7SegmentDisplay disp, int milliseconds) {
   disp.display(timeDisp);
 }
 
+template <class T> int EEPROM_writeAnything(int ee, const T& value)
+{
+  const byte* p = (const byte*)(const void*)&value;
+  unsigned int i;
+  for (i = 0; i < sizeof(value); i++)
+    EEPROM.write(ee++, *p++);
+  return i;
+}
+
+template <class T> int EEPROM_readAnything(int ee, T& value)
+{
+  byte* p = (byte*)(void*)&value;
+  unsigned int i;
+  for (i = 0; i < sizeof(value); i++)
+    *p++ = EEPROM.read(ee++);
+  return i;
+}
 
 
