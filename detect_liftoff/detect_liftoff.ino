@@ -24,11 +24,7 @@
 
 #include "MeOrion.h"
 
-
-// These constants won't change.  They're used to give names
-// to the pins used:
 const int analogInPin = A0;  // Analog input pin that the potentiometer is attached to
-
 const int sensorValuesLen = 100;
 const int jitterdelta = 10;
 int sensorValues[sensorValuesLen];
@@ -39,7 +35,7 @@ bool lastState = false;
 bool timeIsRunning = false;
 bool isPrimed = false;
 
-int bestTime = 10000;
+int bestTime = 00000;
 
 uint8_t    TimeDisp0[] = { 0x10, 0x00, 0x00, 0x00 };
 uint8_t    TimeDisp1[] = { 0x10, 0x00, 0x00, 0x00 };
